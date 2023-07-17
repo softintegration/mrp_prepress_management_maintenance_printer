@@ -9,7 +9,8 @@ import math
 class MrpWorkorder(models.Model):
     _inherit = 'mrp.workorder'
 
-    passes_nbr = fields.Integer(string='Number of passes', compute='_compute_passes_nbr')
+    passes_nbr = fields.Integer(string='Number of passes', compute='_compute_passes_nbr',store=True,readonly=False,
+                                states={'done': [('readonly', True)], 'cancel': [('readonly', True)], 'progress': [('readonly', True)]},)
     is_printer = fields.Boolean(related='workcenter_id.equipment_id.is_printer')
 
     @api.depends('product_id', 'workcenter_id')
