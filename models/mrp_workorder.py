@@ -16,7 +16,7 @@ class MrpWorkorder(models.Model):
     @api.depends('product_id', 'workcenter_id')
     def _compute_passes_nbr(self):
         for each in self:
-            each.passes_nbr = each._get_passes_nbr(each.workcenter_id)
+            each.passes_nbr = each._get_passes_nbr(each.workcenter_id) or 1
 
     def _get_passes_nbr(self, workcenter):
         self.ensure_one()
@@ -57,7 +57,7 @@ class MrpWorkorder(models.Model):
             # TODO : find a better alternative : the settings of workcenter can change
             # in this case we have not to rely on the Number of passes of the current workorder because we have to calculate duration according to
             # the alternative workcenter
-            passes_nbr = self._get_passes_nbr(alternative_workcenter)
+            passes_nbr = self.env.context.get('forced_passes_nbr',self._get_passes_nbr(alternative_workcenter))
             duration_expected_working = (
                                                     self.duration_expected - self.workcenter_id.time_start - self.workcenter_id.time_stop) * self.workcenter_id.time_efficiency / (
                                                     100.0 * cycle_number)
@@ -70,3 +70,13 @@ class MrpWorkorder(models.Model):
         time_cycle = self.operation_id.time_cycle
         return (
                     self.workcenter_id.time_start + self.workcenter_id.time_stop + cycle_number * time_cycle * 100.0 / self.workcenter_id.time_efficiency) * self.passes_nbr
+
+    def write(self, vals):
+        records = super(MrpWorkorder,self).write(vals)
+        if "passes_nbr" in vals:
+            for workorder in self:
+                # here we have to force the passes_nbr to prevent it-s recalculation by the _get_duration_expected method
+                # Note that in this case where the passes_nbr is specified manually the liklyhood of conflicted workororders becoming important
+                workorder.duration_expected = workorder.with_context(forced_passes_nbr=workorder.passes_nbr)._get_duration_expected()
+                workorder._onchange_date_planned_start()
+        return records

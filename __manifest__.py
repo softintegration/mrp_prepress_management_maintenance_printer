@@ -10,7 +10,7 @@
     'qweb': [],
     'description': False,
     'images': [],
-    'version': '1.0.1.2',
+    'version': '1.0.1.3',
     'category': 'Maintenance',
     'demo': [],
     'depends': ['mrp_prepress_management','maintenance_printer'],
