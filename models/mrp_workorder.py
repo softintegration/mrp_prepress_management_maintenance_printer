@@ -37,8 +37,6 @@ class MrpWorkorder(models.Model):
 
     def _get_duration_expected(self, alternative_workcenter=False, ratio=1):
         self.ensure_one()
-        if self.product_id.id == 9799:
-            print("Here you have to test")
         if not self.workcenter_id:
             return self.duration_expected * self.passes_nbr
         if not self.operation_id:
