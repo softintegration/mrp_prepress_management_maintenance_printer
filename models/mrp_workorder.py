@@ -37,6 +37,8 @@ class MrpWorkorder(models.Model):
 
     def _get_duration_expected(self, alternative_workcenter=False, ratio=1):
         self.ensure_one()
+        if self.product_id.id == 9799:
+            print("Here you have to test")
         if not self.workcenter_id:
             return self.duration_expected * self.passes_nbr
         if not self.operation_id:
@@ -58,18 +60,18 @@ class MrpWorkorder(models.Model):
             # in this case we have not to rely on the Number of passes of the current workorder because we have to calculate duration according to
             # the alternative workcenter
             passes_nbr = self.env.context.get('forced_passes_nbr',self._get_passes_nbr(alternative_workcenter))
-            duration_expected_working = (
-                                                    self.duration_expected - self.workcenter_id.time_start - self.workcenter_id.time_stop) * self.workcenter_id.time_efficiency / (
+            default_passes_nbr = self._get_passes_nbr(self.workcenter_id)
+            duration_expected_working = ((self.duration_expected/(default_passes_nbr or 1)) - self.workcenter_id.time_start - self.workcenter_id.time_stop) * self.workcenter_id.time_efficiency / (
                                                     100.0 * cycle_number)
             if duration_expected_working < 0:
                 duration_expected_working = 0
             alternative_wc_cycle_nb = float_round(qty_production / alternative_workcenter.capacity, precision_digits=0,
                                                   rounding_method='UP')
-            return (
-                        alternative_workcenter.time_start + alternative_workcenter.time_stop + alternative_wc_cycle_nb * duration_expected_working * 100.0 / alternative_workcenter.time_efficiency) * passes_nbr
+            result = (alternative_workcenter.time_start + alternative_workcenter.time_stop + alternative_wc_cycle_nb * duration_expected_working * 100.0 / alternative_workcenter.time_efficiency) * passes_nbr
+            return result
         time_cycle = self.operation_id.time_cycle
-        return (
-                    self.workcenter_id.time_start + self.workcenter_id.time_stop + cycle_number * time_cycle * 100.0 / self.workcenter_id.time_efficiency) * self.passes_nbr
+        result = (self.workcenter_id.time_start + self.workcenter_id.time_stop + cycle_number * time_cycle * 100.0 / self.workcenter_id.time_efficiency) * self.passes_nbr
+        return result
 
     def write(self, vals):
         records = super(MrpWorkorder,self).write(vals)
